@@ -8,35 +8,66 @@
 #include "encrypt.h"
 #include "fd_manager.h"
 
-// Declare ONLY udp2raw-specific globals from misc.cpp (NOT included).
-// Globals defined in network.cpp/connection.cpp (which ARE included) do NOT go here.
+// Declare udp2raw-specific globals from misc.cpp (NOT included)
 raw_mode_t raw_mode = mode_faketcp;
 u32_t raw_ip_version = (u32_t)-1;
 int hb_mode = 1;
 int hb_len = 1200;
 char hb_buf[buf_len];
 int mtu_warn = 1375;
-int max_rst_to_show = 15;
-int max_rst_allowed = -1;
-int enable_dns_resolve = 0;
-int ttl_value = 64;
 int bind_addr_used = 0;
 my_ip_t bind_addr;
+int ttl_value = 64;
+int about_to_exit = 0;
+my_id_t const_id = 0;
+int bind_fd = -1;
 int force_source_ip = 0;
 int force_source_port = 0;
 int source_port = -1;
 int fail_time_counter = 0;
-int epoll_trigger_counter = 0;
 int debug_flag = 0;
-int retry_on_error = 0;
-int debug_resend = 0;
-int about_to_exit = 0;
 int keep_thread_running = 0;
 
-// Include only udp2raw source files that provide NEW functionality
-// (network.cpp, connection.cpp, encrypt.cpp, crypto libs).
-// Exclude common.cpp, log.cpp, misc.cpp, fd_manager.cpp, my_ev.cpp —
-// those are provided by UDPspeeder and would cause duplicate symbols.
+// Include common.cpp with renamed functions to get get_true_random_number etc.
+// But we must rename functions that are ALSO in UDPspeeder to avoid conflicts.
+#define get_current_time       u2r_get_current_time
+#define get_current_time_us    u2r_get_current_time_us
+#define setnonblocking         u2r_setnonblocking
+#define set_buf_size           u2r_set_buf_size
+#define get_sock_error         u2r_get_sock_error
+#define get_sock_errno         u2r_get_sock_errno
+#define create_fifo            u2r_create_fifo
+#define myexit                 u2r_myexit
+#define my_ntoa                u2r_my_ntoa
+#define pack_u64               u2r_pack_u64
+#define get_u64_h              u2r_get_u64_h
+#define get_u64_l              u2r_get_u64_l
+#define read_file              u2r_read_file
+#define string_to_vec          u2r_string_to_vec
+#define string_to_vec2         u2r_string_to_vec2
+#define hex_to_u32             u2r_hex_to_u32
+#define hex_to_u32_with_endian u2r_hex_to_u32_with_endian
+#define csum                   u2r_csum
+#define csum_with_header       u2r_csum_with_header
+#define larger_than_u32        u2r_larger_than_u32
+#define larger_than_u16        u2r_larger_than_u16
+#define numbers_to_char        u2r_numbers_to_char
+#define char_to_numbers        u2r_char_to_numbers
+#define hton64                 u2r_hton64
+#define ntoh64                 u2r_ntoh64
+#define print_binary_chars     u2r_print_binary_chars
+#define run_command            u2r_run_command
+#define trim                   u2r_trim
+#define trim_conf_line         u2r_trim_conf_line
+#define parse_conf_line        u2r_parse_conf_line
+#define djb2                   u2r_djb2
+#define sdbm                   u2r_sdbm
+#define init_random_number_fd  u2r_init_random_number_fd
+#define new_connected_udp_fd   u2r_new_connected_udp_fd
+
+#include "common.cpp"
+// Include network.cpp, connection.cpp — their functions use the
+// common.cpp functions (some renamed, some not).
 #include "network.cpp"
 #include "connection.cpp"
 #include "encrypt.cpp"
@@ -48,6 +79,44 @@ int keep_thread_running = 0;
 #include "lib/aes_faster_c/wrapper.cpp"
 #undef polarssl_zeroize
 
+// Undef function renames — now common.cpp funcs are u2r_ prefixed,
+// but get_true_random_number etc. keep their original names.
+#undef get_current_time
+#undef get_current_time_us
+#undef setnonblocking
+#undef set_buf_size
+#undef get_sock_error
+#undef get_sock_errno
+#undef create_fifo
+#undef myexit
+#undef my_ntoa
+#undef pack_u64
+#undef get_u64_h
+#undef get_u64_l
+#undef read_file
+#undef string_to_vec
+#undef string_to_vec2
+#undef hex_to_u32
+#undef hex_to_u32_with_endian
+#undef csum
+#undef csum_with_header
+#undef larger_than_u32
+#undef larger_than_u16
+#undef numbers_to_char
+#undef char_to_numbers
+#undef hton64
+#undef ntoh64
+#undef print_binary_chars
+#undef run_command
+#undef trim
+#undef trim_conf_line
+#undef parse_conf_line
+#undef djb2
+#undef sdbm
+#undef init_random_number_fd
+#undef new_connected_udp_fd
+
+// Undef type renames
 #undef conn_info_t
 #undef blob_t
 #undef conn_manager_t
