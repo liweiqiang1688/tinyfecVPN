@@ -46,12 +46,21 @@ int handle_lower_level(raw_info_t &) { return 0; }
 
 // Stub functions from common.cpp (needed by network.cpp lower_level code)
 int read_file(const char *, string &) { return -1; }
-vector<string> string_to_vec(const char *, const char *) { return {}; }
 vector<vector<string>> string_to_vec2(const char *) { return {}; }
 int hex_to_u32(const string &, u32_t &) { return -1; }
 int hex_to_u32_with_endian(const string &, u32_t &) { return -1; }
-unsigned short csum(const unsigned short *, int) { return 0; }
 unsigned short csum_with_header(char *, int, const unsigned short *, int) { return 0; }
+bool larger_than_u32(u32_t a, u32_t b) { return a > b; }
+bool larger_than_u16(u16_t a, u16_t b) { return a > b; }
+u64_t hton64(u64_t a) {
+    u32_t h = (u32_t)(a >> 32);
+    u32_t l = (u32_t)(a & 0xffffffff);
+    return ((u64_t)htonl(l) << 32) | htonl(h);
+}
+u64_t ntoh64(u64_t a) {
+    return hton64(a);
+}
+void print_binary_chars(const char *, int) {}
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
