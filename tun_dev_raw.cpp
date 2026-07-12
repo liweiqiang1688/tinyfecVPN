@@ -237,6 +237,7 @@ void raw_client_on_timer(raw_client_t *ctx) {
         if (get_current_time() - c.last_hb_sent_time > client_retry_interval) {
             if (c.last_hb_sent_time == 0) { si.seq++; si.ack_seq = ri.seq + 1; si.ts_ack = ri.ts; raw.reserved_send_seq = si.seq; }
             si.seq = raw.reserved_send_seq; si.psh = 0; si.syn = 0; si.ack = 1;
+            mylog(log_info, "sending handshake1\n");
             send_raw0(raw, 0, 0); send_handshake(raw, c.my_id, 0, const_id);
             si.seq += raw.send_info.data_len; c.last_hb_sent_time = get_current_time();
         } return;
@@ -271,6 +272,7 @@ int raw_client_recv_packet(raw_client_t *ctx, char *data, int max_len) {
         if (!ri.new_src_ip.equal(si.new_dst_ip) || ri.src_port != si.dst_port) return -1;
         if (dl == 0 && raw.recv_info.syn == 1 && raw.recv_info.ack == 1) {
             if (ri.ack_seq != si.seq + 1) return -1;
+            mylog(log_info, "client got syn-ack, moving to handshake1\n");
             c.state.client_current_state = client_handshake1;
             c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
             raw_client_on_timer(ctx); return 0;
