@@ -7,7 +7,6 @@
 #include "log.h"
 #include "encrypt.h"
 #include "fd_manager.h"
-#define aes_key_optimize 0
 
 // udp2raw-specific globals from misc.cpp (NOT included).
 // Use u2r_ prefix for globals that conflict with UDPspeeder.
