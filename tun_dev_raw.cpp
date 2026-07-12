@@ -365,6 +365,7 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
     if (peek_raw(pk) < 0) { discard_raw_packet(); return -1; }
     int dl; char *rd;
     address_t addr; addr.from_ip_port_new(raw_ip_version, &pi.new_src_ip, pi.src_port);
+    mylog(log_info, "raw packet %s syn=%d\n", addr.get_str(), (int)pi.syn);
     if (pi.syn == 1) {
         if (!ctx->has_client || ctx->conn_info.state.server_current_state != server_ready) {
             raw_info_t t; if (recv_raw0(t, rd, dl) < 0) return 0;
@@ -374,6 +375,7 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
             ss.dst_port = rs.src_port; ss.new_dst_ip = rs.new_src_ip;
             if (dl == 0 && t.recv_info.syn == 1 && t.recv_info.ack == 0) {
                 ss.ack_seq = rs.seq + 1; ss.psh = 0; ss.syn = 1; ss.ack = 1; ss.ts_ack = rs.ts;
+                mylog(log_info, "received syn from %s, sending syn-ack\n", addr.get_str());
                 send_raw0(t, 0, 0);
             }
         } else discard_raw_packet();
