@@ -38,7 +38,7 @@ int keep_iptables_rule() { return 0; }
 int clear_iptables_rule() { return 0; }
 int iptables_rule_init(const char *, u32_t, int) { return 0; }
 int iptables_gen_add(const char *, u32_t) { return 0; }
-int iptables_rule() { return 0; }
+void iptables_rule() {}
 int process_lower_level_arg() { return 0; }
 int handle_lower_level(raw_info_t &) { return 0; }
 
@@ -91,19 +91,6 @@ char *my_ip_t::get_str2() const {
     if (raw_ip_version == AF_INET) inet_ntop(AF_INET, &v4, res, max_addr_len);
     else inet_ntop(AF_INET6, &v6, res, max_addr_len);
     return res;
-}
-int address_t::from_ip_port_new(int type, void *ip, int port) {
-    clear();
-    if (type == AF_INET) {
-        inner.ipv4.sin_family = AF_INET;
-        inner.ipv4.sin_port = htons(port);
-        inner.ipv4.sin_addr.s_addr = *((u32_t *)ip);
-    } else if (type == AF_INET6) {
-        inner.ipv6.sin6_family = AF_INET6;
-        inner.ipv6.sin6_port = htons(port);
-        inner.ipv6.sin6_addr = *((in6_addr *)ip);
-    }
-    return 0;
 }
 int numbers_to_char(my_id_t id1, my_id_t id2, my_id_t id3, char *&data, int &len) {
     static char buf[buf_len];
