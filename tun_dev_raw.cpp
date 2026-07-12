@@ -8,17 +8,18 @@
 #include "encrypt.h"
 #include "fd_manager.h"
 
-// udp2raw-specific globals from misc.cpp (NOT included)
-raw_mode_t raw_mode = mode_faketcp;
+// udp2raw-specific globals from misc.cpp (NOT included).
+// Use u2r_ prefix for globals that conflict with UDPspeeder.
+raw_mode_t u2r_raw_mode = mode_faketcp;
 u32_t raw_ip_version = (u32_t)-1;
 int hb_mode = 1;
 int hb_len = 1200;
 char hb_buf[buf_len];
-int mtu_warn = 1375;
+int u2r_mtu_warn = 1375;
 int bind_addr_used = 0;
 my_ip_t bind_addr;
 int ttl_value = 64;
-int about_to_exit = 0;
+int u2r_about_to_exit = 0;
 my_id_t const_id = 0;
 int bind_fd = -1;
 int force_source_ip = 0;
@@ -32,6 +33,7 @@ int max_rst_to_show = 15;
 int enable_dns_resolve = 0;
 pthread_t keep_thread;
 u64_t keep_rule_last_time = 0;
+int force_socket_buf = 0;
 
 // Stub functions from misc.cpp needed at link time (unused in our wrapper)
 int keep_iptables_rule() { return 0; }
@@ -41,6 +43,15 @@ int iptables_gen_add(const char *, u32_t) { return 0; }
 void iptables_rule() {}
 int process_lower_level_arg() { return 0; }
 int handle_lower_level(raw_info_t &) { return 0; }
+
+// Stub functions from common.cpp (needed by network.cpp lower_level code)
+int read_file(const char *, string &) { return -1; }
+vector<string> string_to_vec(const char *, const char *) { return {}; }
+vector<vector<string>> string_to_vec2(const char *) { return {}; }
+int hex_to_u32(const string &, u32_t &) { return -1; }
+int hex_to_u32_with_endian(const string &, u32_t &) { return -1; }
+unsigned short csum(const unsigned short *, int) { return 0; }
+unsigned short csum_with_header(char *, int, const unsigned short *, int) { return 0; }
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
@@ -132,6 +143,9 @@ int char_to_numbers(const char *data, int len, my_id_t &id1, my_id_t &id2, my_id
 #undef lru_collector_t
 #undef conn_manager
 #undef random_drop
+#undef raw_mode
+#undef mtu_warn
+#undef about_to_exit
 #undef server_clear_function
 #undef crc32h
 
@@ -150,7 +164,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     remote_addr.from_str((char *)remote_addr_str);
     local_addr.from_str((char *)local_addr_str);
     program_mode = client_mode;
-    raw_mode = mode_faketcp;
+    u2r_raw_mode = mode_faketcp;
     raw_ip_version = remote_addr.get_type();
     use_tcp_dummy_socket = 0;
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
@@ -305,7 +319,7 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     raw_server_t *ctx = new raw_server_t(); ctx->is_ready = 0; ctx->has_client = 0;
     extern address_t local_addr; extern program_mode_t program_mode; extern char key_string[1000];
     local_addr.from_str((char *)local_addr_str);
-    program_mode = server_mode; raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
+    program_mode = server_mode; u2r_raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();

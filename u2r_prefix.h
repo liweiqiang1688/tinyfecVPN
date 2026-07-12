@@ -12,6 +12,9 @@
 // Global renames (conflicting variables)
 #define conn_manager      u2r_conn_manager
 #define random_drop       u2r_random_drop
+#define raw_mode          u2r_raw_mode
+#define mtu_warn          u2r_mtu_warn
+#define about_to_exit     u2r_about_to_exit
 
 // Function renames (conflicting functions)
 #define server_clear_function u2r_server_clear_function
