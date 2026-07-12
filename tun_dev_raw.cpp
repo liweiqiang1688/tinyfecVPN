@@ -7,6 +7,9 @@
 #include "log.h"
 #include "encrypt.h"
 #include "fd_manager.h"
+// IMPORTANT: disable aes_key_optimize - after first AES call, key
+// is set to NULL, causing subsequent encrypt/decrypt to fail.
+#define aes_key_optimize 0
 
 // udp2raw-specific globals from misc.cpp (NOT included).
 // Use u2r_ prefix for globals that conflict with UDPspeeder.
@@ -181,7 +184,6 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
 
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
-    auth_mode = auth_none;
     my_init_keys(key_string, 1);
     return ctx;
 }
@@ -347,7 +349,6 @@ int raw_server_start(raw_server_t *) {
     bind_fd = socket(local_addr.get_type(), SOCK_STREAM, 0);
     if (bind(bind_fd, (struct sockaddr *)&local_addr.inner, local_addr.get_len()) != 0) exit(1);
     if (listen(bind_fd, SOMAXCONN) != 0) exit(1);
-    disable_bpf_filter = 1; // bypass BPF to test raw socket receive
     init_filter(local_addr.get_port());
     return 0;
 }
