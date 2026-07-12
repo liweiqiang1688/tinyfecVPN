@@ -188,7 +188,8 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
-    cipher_mode = cipher_xor;
+    cipher_mode = cipher_none;
+    auth_mode = auth_none;
     my_init_keys(key_string, 1);
 
     mylog(log_info, "cipher_mode=%d\n", (int)cipher_mode);
@@ -345,7 +346,8 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
-    cipher_mode = cipher_xor;
+    cipher_mode = cipher_none;
+    auth_mode = auth_none;
     my_init_keys(key_string, 0);
     mylog(log_info, "cipher_mode=%d\n", (int)cipher_mode);
     return ctx;
