@@ -8,31 +8,10 @@
 #include "encrypt.h"
 #include "fd_manager.h"
 
-// Declare udp2raw-specific globals (NOT in UDPspeeder's common/log/misc/fd_manager)
+// Declare ONLY udp2raw-specific globals from misc.cpp (NOT included).
+// Globals defined in network.cpp/connection.cpp (which ARE included) do NOT go here.
 raw_mode_t raw_mode = mode_faketcp;
 u32_t raw_ip_version = (u32_t)-1;
-int raw_recv_fd = -1;
-int raw_send_fd = -1;
-int use_tcp_dummy_socket = 0;
-int lower_level = 0;
-int lower_level_manual = 0;
-int bind_addr_used = 0;
-my_ip_t bind_addr;
-u32_t link_level_header_len = 0;
-int disable_bpf_filter = 0;
-int disable_anti_replay = 0;
-int g_fix_gro = 0;
-int seq_mode = 3;
-int max_seq_mode = 4;
-int random_drop = 0;
-int filter_port = -1;
-int ifindex = -1;
-char if_name[100] = "";
-char dev[100] = "";
-unsigned short g_ip_id_counter = 0;
-char g_packet_buf[huge_buf_len];
-int g_packet_buf_len = -1;
-int g_packet_buf_cnt = 0;
 int hb_mode = 1;
 int hb_len = 1200;
 char hb_buf[buf_len];
@@ -41,26 +20,17 @@ int max_rst_to_show = 15;
 int max_rst_allowed = -1;
 int enable_dns_resolve = 0;
 int ttl_value = 64;
+int bind_addr_used = 0;
+my_ip_t bind_addr;
 int force_source_ip = 0;
 int force_source_port = 0;
 int source_port = -1;
 int fail_time_counter = 0;
 int epoll_trigger_counter = 0;
 int debug_flag = 0;
-int simple_rule = 0;
-int keep_rule = 0;
-int auto_add_iptables_rule = 0;
-int generate_iptables_rule = 0;
-int generate_iptables_rule_add = 0;
 int retry_on_error = 0;
 int debug_resend = 0;
-int clear_iptables = 0;
-int iptables_rule_added = 0;
-int iptables_rule_keeped = 0;
-int iptables_rule_keep_index = 0;
-int wait_xtables_lock = 0;
-u64_t keep_rule_last_time = 0;
-pthread_t keep_thread;
+int about_to_exit = 0;
 int keep_thread_running = 0;
 
 // Include only udp2raw source files that provide NEW functionality
@@ -479,7 +449,8 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
         my_id_t oid, mid, ocid;
         memcpy(&oid, &raw_data[0], sizeof(oid)); oid = ntohl(oid);
         memcpy(&mid, &raw_data[sizeof(my_id_t)], sizeof(mid)); mid = ntohl(mid);
-        if (mid != cn.my_id) return -1; cn.oppsite_id = oid;
+        if (mid != cn.my_id) return -1;
+        cn.oppsite_id = oid;
         memcpy(&ocid, &raw_data[sizeof(my_id_t)*2], sizeof(ocid)); ocid = ntohl(ocid);
         packet_info_t &ss = ri.send_info, &rs = ri.recv_info;
         ss.seq = rs.ack_seq; ss.ack_seq = rs.seq + ri.recv_info.data_len;
