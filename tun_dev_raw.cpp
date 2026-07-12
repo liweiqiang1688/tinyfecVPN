@@ -17,8 +17,6 @@ int max_rst_to_show = 15;
 int max_rst_allowed = -1;
 int enable_dns_resolve = 0;
 int ttl_value = 64;
-int disable_anti_replay = 0;
-
 // Include only the udp2raw source files that provide new (non-conflicting) functionality.
 // Exclude common.cpp, log.cpp, misc.cpp, fd_manager.cpp, my_ev.cpp — provided by UDPspeeder.
 #include "network.cpp"
