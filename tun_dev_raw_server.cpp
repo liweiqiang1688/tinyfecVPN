@@ -116,7 +116,6 @@ static void conn_timer_cb(struct ev_loop *loop, struct ev_timer *watcher, int re
     raw_server_on_timer(raw_ctx);
 
     if (raw_server_is_ready(raw_ctx)) {
-        extern address_t local_addr;
         conn_info.stat.report_as_server(local_addr);
     }
 }
