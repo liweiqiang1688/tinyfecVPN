@@ -18,7 +18,6 @@ int max_rst_allowed = -1;
 int enable_dns_resolve = 0;
 int ttl_value = 64;
 int disable_anti_replay = 0;
-int disable_bpf_filter = 0;
 
 // Include only the udp2raw source files that provide new (non-conflicting) functionality.
 // Exclude common.cpp, log.cpp, misc.cpp, fd_manager.cpp, my_ev.cpp — provided by UDPspeeder.
@@ -28,8 +27,12 @@ int disable_bpf_filter = 0;
 #include "lib/md5.cpp"
 #include "lib/pbkdf2-sha1.cpp"
 #include "lib/pbkdf2-sha256.cpp"
+// aes.cpp defines a static polarssl_zeroize that conflicts with md5.cpp's version.
+// Rename it to avoid the conflict.
+#define polarssl_zeroize polarssl_zeroize_aes
 #include "lib/aes_faster_c/aes.cpp"
 #include "lib/aes_faster_c/wrapper.cpp"
+#undef polarssl_zeroize
 
 #undef conn_info_t
 #undef blob_t
@@ -472,7 +475,7 @@ void raw_server_on_timer(raw_server_t *ctx) {
     if (!ctx->has_client || !ctx->is_ready) return;
 
     u2r_conn_info_t &conn_info = ctx->conn_info;
-    conn_info.blob->conv_manager.s.clear_inactive("");
+    conn_info.blob->conv_manager.s.clear_inactive((char *)"");
 
     if (conn_info.state.server_current_state == server_ready) {
         if (get_current_time() - conn_info.last_hb_sent_time < heartbeat_interval) return;
