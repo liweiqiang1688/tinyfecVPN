@@ -9,8 +9,11 @@
 #include "log.h"
 #include "misc.h"
 #include "tun_dev.h"
+#include "tun_dev_raw.h"
 #include "git_version.h"
 using namespace std;
+
+static int use_raw_mode = 0;
 
 static void print_help() {
     char git_version_buf[100] = {0};
@@ -35,6 +38,9 @@ static void print_help() {
     printf("    --timeout             <number>        how long could a packet be held in queue before doing fec, unit: ms, default: 8ms\n");
     printf("    --report              <number>        turn on send/recv report, and set a period for reporting, unit: s\n");
     printf("    --keep-reconnect                      re-connect after lost connection,only for client. \n");
+    printf("    --raw-mode            <number>        enable raw socket mode, available values: 0 (disabled, default), 1 (faketcp).\n");
+    printf("                                          in raw mode, data is sent over fake tcp packets to bypass isp throttling.\n");
+    printf("                                          requires root privillege and only supports linux.\n");
 
     printf("advanced options:\n");
     printf("    --mode                <number>        fec-mode,available values: 0,1; mode 0(default) costs less bandwidth,no mtu problem.\n");
@@ -136,7 +142,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // g_fec_mode=0;
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < argc) {
+            use_raw_mode = atoi(argv[i + 1]);
+            if (use_raw_mode < 0 || use_raw_mode > 1) {
+                mylog(log_fatal, "--raw-mode must be 0 or 1\n");
+                myexit(-1);
+            }
+            break;
+        }
+    }
 
     process_arg(argc, argv);
 
@@ -154,9 +169,17 @@ int main(int argc, char *argv[]) {
             tun_mtu=g_fec_mtu;
     }*/
     if (program_mode == client_mode) {
-        tun_dev_client_event_loop();
+        if (use_raw_mode) {
+            tun_dev_raw_client_event_loop();
+        } else {
+            tun_dev_client_event_loop();
+        }
     } else {
-        tun_dev_server_event_loop();
+        if (use_raw_mode) {
+            tun_dev_raw_server_event_loop();
+        } else {
+            tun_dev_server_event_loop();
+        }
     }
 
     return 0;
