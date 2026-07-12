@@ -7,9 +7,6 @@
 #include "log.h"
 #include "encrypt.h"
 #include "fd_manager.h"
-// Disable aes_key_optimize — after first call, key is set to NULL,
-// causing subsequent encrypt/decrypt to fail with wrong key.
-#define aes_key_optimize 0
 
 // udp2raw-specific globals from misc.cpp (NOT included).
 // Use u2r_ prefix for globals that conflict with UDPspeeder.
@@ -63,12 +60,7 @@ u64_t hton64(u64_t a) {
 u64_t ntoh64(u64_t a) {
     return hton64(a);
 }
-void print_binary_chars(const char *a, int len) {
-    for (int i = 0; i < len && i < 64; i++) {
-        fprintf(stderr, "<%02x>", (unsigned char)a[i]);
-    }
-    fprintf(stderr, "\n");
-}
+void print_binary_chars(const char *, int) {}
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
@@ -186,16 +178,10 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     use_tcp_dummy_socket = 0;
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
-    // Bind raw socket to loopback interface
-    strncpy(dev, "lo", sizeof(dev) - 1);
+
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
-    cipher_mode = cipher_none;
-    auth_mode = auth_none;
     my_init_keys(key_string, 1);
-
-    mylog(log_info, "cipher_mode=%d\n", (int)cipher_mode);
-    return ctx;
 }
 void raw_client_destroy(raw_client_t *ctx) { if (ctx) delete ctx; }
 int raw_client_get_raw_recv_fd(raw_client_t *) { return raw_recv_fd; }
@@ -251,7 +237,6 @@ void raw_client_on_timer(raw_client_t *ctx) {
         if (get_current_time() - c.last_hb_sent_time > client_retry_interval) {
             if (c.last_hb_sent_time == 0) { si.seq++; si.ack_seq = ri.seq + 1; si.ts_ack = ri.ts; raw.reserved_send_seq = si.seq; }
             si.seq = raw.reserved_send_seq; si.psh = 0; si.syn = 0; si.ack = 1;
-            mylog(log_info, "sending handshake1\n");
             send_raw0(raw, 0, 0); send_handshake(raw, c.my_id, 0, const_id);
             si.seq += raw.send_info.data_len; c.last_hb_sent_time = get_current_time();
         } return;
@@ -286,7 +271,6 @@ int raw_client_recv_packet(raw_client_t *ctx, char *data, int max_len) {
         if (!ri.new_src_ip.equal(si.new_dst_ip) || ri.src_port != si.dst_port) return -1;
         if (dl == 0 && raw.recv_info.syn == 1 && raw.recv_info.ack == 1) {
             if (ri.ack_seq != si.seq + 1) return -1;
-            mylog(log_info, "client got syn-ack, moving to handshake1\n");
             c.state.client_current_state = client_handshake1;
             c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
             raw_client_on_timer(ctx); return 0;
@@ -347,13 +331,8 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     program_mode = server_mode; u2r_raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
-    // Bind raw socket to loopback interface
-    strncpy(dev, "lo", sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
-    cipher_mode = cipher_none;
-    auth_mode = auth_none;
     my_init_keys(key_string, 0);
-    mylog(log_info, "cipher_mode=%d\n", (int)cipher_mode);
     return ctx;
 }
 void raw_server_destroy(raw_server_t *ctx) { if (ctx) delete ctx; }
@@ -386,7 +365,6 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
     if (peek_raw(pk) < 0) { discard_raw_packet(); return -1; }
     int dl; char *rd;
     address_t addr; addr.from_ip_port_new(raw_ip_version, &pi.new_src_ip, pi.src_port);
-    mylog(log_info, "raw packet %s syn=%d\n", addr.get_str(), (int)pi.syn);
     if (pi.syn == 1) {
         if (!ctx->has_client || ctx->conn_info.state.server_current_state != server_ready) {
             raw_info_t t; if (recv_raw0(t, rd, dl) < 0) return 0;
@@ -396,7 +374,6 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
             ss.dst_port = rs.src_port; ss.new_dst_ip = rs.new_src_ip;
             if (dl == 0 && t.recv_info.syn == 1 && t.recv_info.ack == 0) {
                 ss.ack_seq = rs.seq + 1; ss.psh = 0; ss.syn = 1; ss.ack = 1; ss.ts_ack = rs.ts;
-                mylog(log_info, "received syn from %s, sending syn-ack\n", addr.get_str());
                 send_raw0(t, 0, 0);
             }
         } else discard_raw_packet();
