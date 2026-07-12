@@ -60,7 +60,12 @@ u64_t hton64(u64_t a) {
 u64_t ntoh64(u64_t a) {
     return hton64(a);
 }
-void print_binary_chars(const char *, int) {}
+void print_binary_chars(const char *a, int len) {
+    for (int i = 0; i < len && i < 64; i++) {
+        fprintf(stderr, "<%02x>", (unsigned char)a[i]);
+    }
+    fprintf(stderr, "\n");
+}
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
