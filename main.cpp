@@ -142,6 +142,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Check for --raw-mode and strip it before process_arg
+    int new_argc = argc;
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < argc) {
             use_raw_mode = atoi(argv[i + 1]);
@@ -149,11 +151,16 @@ int main(int argc, char *argv[]) {
                 mylog(log_fatal, "--raw-mode must be 0 or 1\n");
                 myexit(-1);
             }
+            // remove --raw-mode and its value from argv
+            for (int j = i; j < argc - 2; j++) {
+                argv[j] = argv[j + 2];
+            }
+            new_argc -= 2;
             break;
         }
     }
 
-    process_arg(argc, argv);
+    process_arg(new_argc, argv);
 
     delay_manager.set_capacity(delay_capacity);
     // local_ip_uint32=inet_addr(local_ip);
