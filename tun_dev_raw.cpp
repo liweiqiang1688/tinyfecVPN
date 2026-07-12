@@ -186,6 +186,8 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     use_tcp_dummy_socket = 0;
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
+    // Bind raw socket to loopback interface
+    strncpy(dev, "lo", sizeof(dev) - 1);
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
     cipher_mode = cipher_none;
@@ -345,6 +347,8 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     program_mode = server_mode; u2r_raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
+    // Bind raw socket to loopback interface
+    strncpy(dev, "lo", sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
     cipher_mode = cipher_none;
     auth_mode = auth_none;
