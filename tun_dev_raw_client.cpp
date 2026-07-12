@@ -132,7 +132,7 @@ int tun_dev_raw_client_event_loop() {
     conn_info_t *conn_info_p = new conn_info_t;
     conn_info_t &conn_info = *conn_info_p;
 
-    raw_ctx = raw_client_init(remote_addr.get_str(), local_addr.get_str(),
+    raw_ctx = raw_client_init(remote_addr.get_str(), "0.0.0.0:0",
                                key_string, tun_dev);
     if (!raw_ctx) {
         mylog(log_fatal, "raw_client_init failed\n");
