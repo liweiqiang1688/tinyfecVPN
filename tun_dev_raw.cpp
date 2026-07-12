@@ -182,6 +182,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
     my_init_keys(key_string, 1);
+    return ctx;
 }
 void raw_client_destroy(raw_client_t *ctx) { if (ctx) delete ctx; }
 int raw_client_get_raw_recv_fd(raw_client_t *) { return raw_recv_fd; }
