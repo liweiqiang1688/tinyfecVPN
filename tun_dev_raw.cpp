@@ -8,7 +8,7 @@
 #include "encrypt.h"
 #include "fd_manager.h"
 
-// Declare udp2raw-specific globals from misc.cpp (NOT included)
+// udp2raw-specific globals from misc.cpp (excluded to avoid conflicts)
 raw_mode_t raw_mode = mode_faketcp;
 u32_t raw_ip_version = (u32_t)-1;
 int hb_mode = 1;
@@ -28,46 +28,10 @@ int fail_time_counter = 0;
 int debug_flag = 0;
 int keep_thread_running = 0;
 
-// Include common.cpp with renamed functions to get get_true_random_number etc.
-// But we must rename functions that are ALSO in UDPspeeder to avoid conflicts.
-#define get_current_time       u2r_get_current_time
-#define get_current_time_us    u2r_get_current_time_us
-#define setnonblocking         u2r_setnonblocking
-#define set_buf_size           u2r_set_buf_size
-#define get_sock_error         u2r_get_sock_error
-#define get_sock_errno         u2r_get_sock_errno
-#define create_fifo            u2r_create_fifo
-#define myexit                 u2r_myexit
-#define my_ntoa                u2r_my_ntoa
-#define pack_u64               u2r_pack_u64
-#define get_u64_h              u2r_get_u64_h
-#define get_u64_l              u2r_get_u64_l
-#define read_file              u2r_read_file
-#define string_to_vec          u2r_string_to_vec
-#define string_to_vec2         u2r_string_to_vec2
-#define hex_to_u32             u2r_hex_to_u32
-#define hex_to_u32_with_endian u2r_hex_to_u32_with_endian
-#define csum                   u2r_csum
-#define csum_with_header       u2r_csum_with_header
-#define larger_than_u32        u2r_larger_than_u32
-#define larger_than_u16        u2r_larger_than_u16
-#define numbers_to_char        u2r_numbers_to_char
-#define char_to_numbers        u2r_char_to_numbers
-#define hton64                 u2r_hton64
-#define ntoh64                 u2r_ntoh64
-#define print_binary_chars     u2r_print_binary_chars
-#define run_command            u2r_run_command
-#define trim                   u2r_trim
-#define trim_conf_line         u2r_trim_conf_line
-#define parse_conf_line        u2r_parse_conf_line
-#define djb2                   u2r_djb2
-#define sdbm                   u2r_sdbm
-#define init_random_number_fd  u2r_init_random_number_fd
-#define new_connected_udp_fd   u2r_new_connected_udp_fd
-
+// Include all needed udp2raw source files (functions renamed by u2r_prefix.h)
+// my_ev.cpp excluded (libev provided by UDPspeeder)
+// client.cpp, server.cpp excluded (they define main/secondary event loops)
 #include "common.cpp"
-// Include network.cpp, connection.cpp — their functions use the
-// common.cpp functions (some renamed, some not).
 #include "network.cpp"
 #include "connection.cpp"
 #include "encrypt.cpp"
@@ -79,8 +43,13 @@ int keep_thread_running = 0;
 #include "lib/aes_faster_c/wrapper.cpp"
 #undef polarssl_zeroize
 
-// Undef function renames — now common.cpp funcs are u2r_ prefixed,
-// but get_true_random_number etc. keep their original names.
+// Undef all renames — wrapper code below uses explicit u2r_ prefix for renamed items
+#undef conn_info_t
+#undef blob_t
+#undef conn_manager_t
+#undef conv_manager_t
+#undef anti_replay_t
+#undef lru_collector_t
 #undef get_current_time
 #undef get_current_time_us
 #undef setnonblocking
@@ -93,11 +62,6 @@ int keep_thread_running = 0;
 #undef pack_u64
 #undef get_u64_h
 #undef get_u64_l
-#undef read_file
-#undef string_to_vec
-#undef string_to_vec2
-#undef hex_to_u32
-#undef hex_to_u32_with_endian
 #undef csum
 #undef csum_with_header
 #undef larger_than_u32
@@ -111,18 +75,29 @@ int keep_thread_running = 0;
 #undef trim
 #undef trim_conf_line
 #undef parse_conf_line
+#undef read_file
+#undef string_to_vec
+#undef string_to_vec2
+#undef hex_to_u32
+#undef hex_to_u32_with_endian
 #undef djb2
 #undef sdbm
-#undef init_random_number_fd
-#undef new_connected_udp_fd
-
-// Undef type renames
-#undef conn_info_t
-#undef blob_t
-#undef conn_manager_t
-#undef conv_manager_t
-#undef anti_replay_t
-#undef lru_collector_t
+#undef process_arg
+#undef pre_process_arg
+#undef print_help
+#undef load_config
+#undef process_log_level
+#undef process_lower_level_arg
+#undef signal_handler
+#undef iptables_rule
+#undef clear_iptables_rule
+#undef add_iptables_rule
+#undef iptables_gen_add
+#undef iptables_rule_init
+#undef keep_iptables_rule
+#undef unit_test
+#undef set_timer
+#undef set_timer_server
 
 #include "tun_dev_raw.h"
 
@@ -145,7 +120,6 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     extern address_t remote_addr, local_addr;
     extern program_mode_t program_mode;
     extern char key_string[1000];
-    extern my_id_t const_id;
 
     remote_addr.from_str((char *)remote_addr_str);
     local_addr.from_str((char *)local_addr_str);
@@ -171,8 +145,6 @@ int raw_client_get_raw_recv_fd(raw_client_t *) { return raw_recv_fd; }
 
 int raw_client_start(raw_client_t *ctx) {
     extern address_t remote_addr;
-    extern int bind_fd;
-
     lower_level = 0;
     init_raw_socket();
 
@@ -331,7 +303,6 @@ int raw_client_recv_packet(raw_client_t *ctx, char *data, int max_len) {
         if (!ri.new_src_ip.equal(si.new_dst_ip) || ri.src_port != si.dst_port) return -1;
         if (data_len == 0 && raw.recv_info.syn == 1 && raw.recv_info.ack == 1) {
             if (ri.ack_seq != si.seq + 1) return -1;
-            mylog(log_info, "got syn-ack, moving to handshake1\n");
             conn.state.client_current_state = client_handshake1;
             conn.last_state_time = get_current_time();
             conn.last_hb_sent_time = 0;
@@ -416,7 +387,6 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     extern address_t local_addr;
     extern program_mode_t program_mode;
     extern char key_string[1000];
-    extern my_id_t const_id;
 
     local_addr.from_str((char *)local_addr_str);
     program_mode = server_mode;
@@ -438,16 +408,14 @@ int raw_server_get_raw_recv_fd(raw_server_t *) { return raw_recv_fd; }
 
 int raw_server_start(raw_server_t *) {
     extern address_t local_addr;
-    extern int bind_fd;
-
     lower_level = 0;
     init_raw_socket();
     bind_fd = socket(local_addr.get_type(), SOCK_STREAM, 0);
     if (bind(bind_fd, (struct sockaddr *)&local_addr.inner, local_addr.get_len()) != 0) {
-        mylog(log_fatal, "bind fail\n"); myexit(-1);
+        mylog(log_fatal, "bind fail\n"); exit(1);
     }
     if (listen(bind_fd, SOMAXCONN) != 0) {
-        mylog(log_fatal, "listen fail\n"); myexit(-1);
+        mylog(log_fatal, "listen fail\n"); exit(1);
     }
     init_filter(local_addr.get_port());
     mylog(log_info, "now listening at %s\n", local_addr.get_str());
@@ -485,7 +453,6 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
             if (data_len == 0 && tmp.recv_info.syn == 1 && tmp.recv_info.ack == 0) {
                 ss.ack_seq = rs.seq + 1; ss.psh = 0; ss.syn = 1; ss.ack = 1;
                 ss.ts_ack = rs.ts; send_raw0(tmp, 0, 0);
-                return 0;
             }
         } else { discard_raw_packet(); }
         return 0;
