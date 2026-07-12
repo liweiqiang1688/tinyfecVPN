@@ -7,9 +7,7 @@
 #include "log.h"
 #include "encrypt.h"
 #include "fd_manager.h"
-// IMPORTANT: disable aes_key_optimize - after first AES call, key
-// is set to NULL, causing subsequent encrypt/decrypt to fail.
-#define aes_key_optimize 0
+// fix: modify aes_key_optimize at runtime (safer than #define)
 
 // udp2raw-specific globals from misc.cpp (NOT included).
 // Use u2r_ prefix for globals that conflict with UDPspeeder.
@@ -184,6 +182,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
 
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
+    *(int *)&aes_key_optimize = 0; // disable key optimization
     my_init_keys(key_string, 1);
     return ctx;
 }
@@ -336,7 +335,7 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
-    auth_mode = auth_none;
+    *(int *)&aes_key_optimize = 0;
     my_init_keys(key_string, 0);
     return ctx;
 }
