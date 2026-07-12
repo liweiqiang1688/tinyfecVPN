@@ -7,6 +7,9 @@
 #include "log.h"
 #include "encrypt.h"
 #include "fd_manager.h"
+// Disable aes_key_optimize — after first call, key is set to NULL,
+// causing subsequent encrypt/decrypt to fail with wrong key.
+#define aes_key_optimize 0
 
 // udp2raw-specific globals from misc.cpp (NOT included).
 // Use u2r_ prefix for globals that conflict with UDPspeeder.
