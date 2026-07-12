@@ -9,12 +9,10 @@
 #define anti_replay_t     u2r_anti_replay_t
 #define lru_collector_t   u2r_lru_collector_t
 
-// Function renames for functions that exist in BOTH common.cpp files.
-// These MUST be renamed to avoid duplicate symbol errors at link time.
-// Functions that only exist in ONE codebase are NOT renamed (they don't conflict).
-#define get_current_time       u2r_get_current_time
-#define get_current_time_us    u2r_get_current_time_us
-#define setnonblocking         u2r_setnonblocking
+// Function renames for functions that exist in BOTH and have
+// IDENTICAL signatures. These must be renamed to avoid link errors.
+// Functions with same signature AND same implementation are NOT renamed
+// (the linker will pick one, which is fine).
 #define set_buf_size           u2r_set_buf_size
 #define get_sock_error         u2r_get_sock_error
 #define get_sock_errno         u2r_get_sock_errno

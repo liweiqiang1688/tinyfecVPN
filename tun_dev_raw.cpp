@@ -50,9 +50,6 @@ int keep_thread_running = 0;
 #undef conv_manager_t
 #undef anti_replay_t
 #undef lru_collector_t
-#undef get_current_time
-#undef get_current_time_us
-#undef setnonblocking
 #undef set_buf_size
 #undef get_sock_error
 #undef get_sock_errno
