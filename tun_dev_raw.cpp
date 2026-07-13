@@ -376,6 +376,8 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
             if (dl == 0 && t.recv_info.syn == 1 && t.recv_info.ack == 0) {
                 ss.ack_seq = rs.seq + 1; ss.psh = 0; ss.syn = 1; ss.ack = 1; ss.ts_ack = rs.ts;
                 send_raw0(t, 0, 0);
+                // Preserve TCP state so subsequent packets use correct seq numbers
+                ctx->conn_info.raw_info = t;
             }
         } else discard_raw_packet();
         return 0;
