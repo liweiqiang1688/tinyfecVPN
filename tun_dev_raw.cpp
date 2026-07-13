@@ -49,7 +49,6 @@ int read_file(const char *, string &) { return -1; }
 vector<vector<string>> string_to_vec2(const char *) { return {}; }
 int hex_to_u32(const string &, u32_t &) { return -1; }
 int hex_to_u32_with_endian(const string &, u32_t &) { return -1; }
-unsigned short csum_with_header(char *, int, const unsigned short *, int) { return 0; }
 bool larger_than_u32(u32_t a, u32_t b) { return a > b; }
 bool larger_than_u16(u16_t a, u16_t b) { return a > b; }
 u64_t hton64(u64_t a) {
@@ -57,10 +56,10 @@ u64_t hton64(u64_t a) {
     u32_t l = (u32_t)(a & 0xffffffff);
     return ((u64_t)htonl(l) << 32) | htonl(h);
 }
-u64_t ntoh64(u64_t a) {
-    return hton64(a);
-}
+u64_t ntoh64(u64_t a) { return hton64(a); }
 void print_binary_chars(const char *, int) {}
+// NOTE: csum and csum_with_header are NOT stubbed — they come from
+// UDPspeeder's common.cpp. Do NOT stub them or TCP checksums will be 0!
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
@@ -181,8 +180,6 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
 
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
-    cipher_mode = cipher_xor;
-    auth_mode = auth_none;
     my_init_keys(key_string, 1);
     return ctx;
 }
@@ -335,8 +332,6 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
-    cipher_mode = cipher_xor;
-    auth_mode = auth_none;
     my_init_keys(key_string, 0);
     return ctx;
 }
