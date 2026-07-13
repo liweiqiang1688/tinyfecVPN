@@ -33,7 +33,7 @@ Linux host (including desktop Linux,<del>Android phone/tablet</del>, OpenWRT rou
 
 For Windows and MacOS, You can run tinyfecVPN inside [this](https://github.com/wangyu-/udp2raw-tunnel/releases/download/20171108.0/lede-17.01.2-x86_virtual_machine_image.zip) 7.5mb virtual machine image.
 
-Need root or at least CAP_NET_ADMIN permission to run, for creating tun device.
+Need root or at least CAP_NET_ADMIN permission to run, for creating tun device. `--raw-mode 1` additionally requires root for raw socket access.
 
 # How does it work
 
@@ -66,12 +66,22 @@ Download binary release from https://github.com/wangyu-/tinyfecVPN/releases
 
 Assume your server ip is `44.55.66.77`, you have a service listening on udp/tcp port `0.0.0.0:7777`. 
 
+**UDP mode (default):**
 ```
 # Run at server side:
 ./tinyvpn -s -l0.0.0.0:4096 -f20:10 -k "passwd" --sub-net 10.22.22.0
 
 # Run at client side
 ./tinyvpn -c -r44.55.66.77:4096 -f20:10 -k "passwd" --sub-net 10.22.22.0
+```
+
+**Fake TCP mode (--raw-mode 1):**
+```
+# Run at server side:
+./tinyvpn -s -l0.0.0.0:4096 -f20:10 -k "passwd" --raw-mode 1 --sub-net 10.22.22.0
+
+# Run at client side
+./tinyvpn -c -r44.55.66.77:4096 -f20:10 -k "passwd" --raw-mode 1 --sub-net 10.22.22.0
 ```
 
 Now, use `10.22.22.1:7777` to connect to your service,all traffic will be improved by FEC. If you ping `10.22.22.1`, you will get ping reply.
@@ -86,13 +96,25 @@ To create tun device, you need root or cap_net_admin permission. Its suggested t
 
 Currently one server supports only one client. For multiple clients, start multiple servers. 
 
-##### Note2
+##### Fake TCP Mode (Built-in udp2raw)
 
-You can use udp2raw with tinyfecVPN together to get better speed on some ISP with UDP QoS(UDP throttling).
+tinyfecVPN has **built-in** support for [udp2raw](https://github.com/wangyu-/udp2raw-tunnel)'s fake TCP transport. Use `--raw-mode 1` to wrap FEC-encoded data inside fake TCP packets, which can bypass ISP UDP throttling/QoS:
 
-udp2raw's repo：
+```
+# Server:
+./tinyvpn -s -l0.0.0.0:4096 -f20:10 -k "passwd" --raw-mode 1 --sub-net 10.22.22.0
 
-https://github.com/wangyu-/udp2raw-tunnel
+# Client:
+./tinyvpn -c -r44.55.66.77:4096 -f20:10 -k "passwd" --raw-mode 1 --sub-net 10.22.22.0
+```
+
+Requirements for `--raw-mode 1`:
+- **Root** privilege is required (raw socket needs CAP_NET_RAW)
+- **Linux only** (uses PF_PACKET raw sockets)
+- The key (specified by `-k`) is used for AES-128-CBC encryption on the fake TCP layer
+- All FEC options (`-f`, `--timeout`, `--mode`, etc.) work identically in fake TCP mode
+
+`--raw-mode 0` (default) uses the original UDP transport.
 
 # Advanced Topic
 
@@ -116,6 +138,7 @@ main options:
     --mode                <number>        fec-mode,available values: 0, 1; 0 cost less bandwidth, 1 cost less latency;default: 0)
     --report              <number>        turn on send/recv report, and set a period for reporting, unit: s
     --keep-reconnect                      re-connect after lost connection,only for client.
+    --raw-mode            <number>        transport mode: 0 (udp, default), 1 (fake tcp via udp2raw)
 advanced options:
     --mtu                 <number>        mtu. for mode 0, the program will split packet to segment smaller than mtu_value.
                                           for mode 1, no packet will be split, the program just check if the mtu is exceed.
