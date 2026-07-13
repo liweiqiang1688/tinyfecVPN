@@ -345,7 +345,6 @@ int raw_server_start(raw_server_t *) {
     bind_fd = socket(local_addr.get_type(), SOCK_STREAM, 0);
     if (bind(bind_fd, (struct sockaddr *)&local_addr.inner, local_addr.get_len()) != 0) exit(1);
     if (listen(bind_fd, SOMAXCONN) != 0) exit(1);
-    disable_bpf_filter = 1;  // temporarily disable BPF for cross-machine test
     init_filter(local_addr.get_port());
     return 0;
 }
