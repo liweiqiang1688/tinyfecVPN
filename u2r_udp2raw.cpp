@@ -124,7 +124,18 @@ int char_to_numbers(const char *data, int len, my_id_t &id1, my_id_t &id2, my_id
     memcpy(&id3, data + sizeof(my_id_t) * 2, sizeof(id3)); id3 = ntohl(id3);
     return 0;
 }
-void print_binary_chars(const char *, int) {}
+void print_binary_chars(const char *a, int len) {
+    for (int i = 0; i < len && i < 64; i++)
+        fprintf(stderr, "<%02x>", (unsigned char)a[i]);
+    fprintf(stderr, "\n");
+}
+// Debug: log the actual checksum values
+static void log_auth_data(const char *data, int len) {
+    unsigned char sum = 0;
+    for (int i = 0; i < len - 1; i++) sum += (unsigned char)data[i];
+    fprintf(stderr, "AUTH len=%d computed_sum=<%02x> stored=<%02x> ~sum=<%02x>\n",
+            len, sum, (unsigned char)data[len-1], (unsigned char)~sum);
+}
 
 // Include udp2raw source files (each gets its own static scope via include)
 #include "network.cpp"
