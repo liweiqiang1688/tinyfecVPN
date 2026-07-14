@@ -152,6 +152,7 @@ int raw_client_recv_packet(raw_client_t *ctx, char *data, int max_len) {
         if (!ri.new_src_ip.equal(si.new_dst_ip) || ri.src_port != si.dst_port) return -1;
         if (dl == 0 && raw.recv_info.syn == 1 && raw.recv_info.ack == 1) {
             if (ri.ack_seq != si.seq + 1) return -1;
+            mylog(log_info, "client got syn-ack -> handshake1\n");
             c.state.client_current_state = client_handshake1;
             c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
             raw_client_on_timer(ctx); return 0;
@@ -165,9 +166,12 @@ int raw_client_recv_packet(raw_client_t *ctx, char *data, int max_len) {
         memcpy(&m, &rd[sizeof(my_id_t)], sizeof(m)); m = ntohl(m);
         if (m != c.my_id) return -1;
         if (ri.ack_seq != si.seq || ri.seq != si.ack_seq) return -1;
-        c.oppsite_id = o; c.state.client_current_state = client_handshake2;
-        c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
-        raw_client_on_timer(ctx); return 0;
+        c.oppsite_id = o;         mylog(log_info, "client handshake1 -> handshake2\n");
+        conn.state.client_current_state = client_handshake2;
+        conn.last_state_time = get_current_time();
+        conn.last_hb_sent_time = 0;
+        raw_client_on_timer(ctx);
+        return 0;
     }
     if (c.state.client_current_state == client_handshake2 || c.state.client_current_state == client_ready) {
         vector<char> tv; vector<string> dv; recv_safer_multi(c, tv, dv);
