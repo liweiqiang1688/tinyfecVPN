@@ -406,7 +406,10 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
         return 0;
     }
     if (!ctx->has_client) {
-        raw_info_t t; if (recv_bare(t, rd, dl) < 0) return 0;
+        raw_info_t t; if (recv_bare(t, rd, dl) < 0) {
+            mylog(log_info, "recv_bare failed, dl=%d\n", dl);
+            return 0;
+        }
         if (dl < int(3 * sizeof(my_id_t))) return -1;
         my_id_t z; memcpy(&z, &rd[sizeof(my_id_t)], sizeof(z)); z = ntohl(z);
         if (z != 0) return -1;
