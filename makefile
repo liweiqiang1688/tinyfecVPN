@@ -9,7 +9,7 @@ cc_arm= /toolchains/arm-2014.05/bin/arm-none-linux-gnueabi-g++
 FLAGS= -std=c++11   -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-missing-field-initializers -ggdb -I. -IUDPspeeder -isystem UDPspeeder/libev ${OPT} 
 
 SOURCES=`ls UDPspeeder/*.cpp UDPspeeder/lib/*.cpp|grep -v main.cpp|grep -v tunnel.cpp` main.cpp tun_dev.cpp tun_dev_client.cpp tun_dev_server.cpp tun_dev_raw_client.cpp tun_dev_raw_server.cpp
-OBJECTS=tun_dev_raw.o
+OBJECTS=tun_dev_raw.o u2r_udp2raw.o
 
 #INCLUDE= -I.  -IUDPspeeder
 
@@ -36,7 +36,11 @@ init:
 	git submodule init
 	git submodule update
 
-# tun_dev_raw.o is compiled separately with udp2raw headers to avoid conflicts
+# u2r_udp2raw.o: compiled with udp2raw headers (like tun_dev_raw.o)
+u2r_udp2raw.o: u2r_udp2raw.cpp u2r_prefix.h
+	${cc_local} -c -o $@ -Iudp2raw -isystem udp2raw/libev ${FLAGS} $<
+
+# tun_dev_raw.o compiled with udp2raw headers for wrapper functions
 tun_dev_raw.o: tun_dev_raw.cpp tun_dev_raw.h u2r_prefix.h
 	${cc_local} -c -o $@ -Iudp2raw -isystem udp2raw/libev ${FLAGS} $<
 
