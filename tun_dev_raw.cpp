@@ -265,6 +265,11 @@ int raw_server_recv_packet(raw_server_t *ctx, char *data, int max_len) {
     }
     if (!ctx->has_client) {
         raw_info_t t; if (recv_bare(t, rd, dl) < 0) return 0;
+        // hex dump decrypted handshake for debugging
+        fprintf(stderr, "HANDSHAKE decrypted dl=%d: ", dl);
+        for (int i = 0; i < dl && i < 32; i++)
+            fprintf(stderr, "<%02x>", (unsigned char)rd[i]);
+        fprintf(stderr, "\n");
         if (dl < int(3 * sizeof(my_id_t))) return -1;
         my_id_t z; memcpy(&z, &rd[sizeof(my_id_t)], sizeof(z)); z = ntohl(z);
         if (z != 0) return -1;

@@ -125,8 +125,17 @@ int char_to_numbers(const char *data, int len, my_id_t &id1, my_id_t &id2, my_id
     return 0;
 }
 void print_binary_chars(const char *a, int len) {
+    // dump to stdout (dup2'd from stderr in main)
     for (int i = 0; i < len && i < 32; i++)
         fprintf(stderr, "<%02x>", (unsigned char)a[i]);
+    fprintf(stderr, "\n");
+}
+
+// Hex dump helper for debugging
+static void hex_dump(const char *label, const char *data, int len) {
+    fprintf(stderr, "%s len=%d: ", label, len);
+    for (int i = 0; i < len && i < 64; i++)
+        fprintf(stderr, "<%02x>", (unsigned char)data[i]);
     fprintf(stderr, "\n");
 }
 
