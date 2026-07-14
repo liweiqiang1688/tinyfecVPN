@@ -75,8 +75,9 @@ int raw_client_start(raw_client_t *ctx) {
     address_t tmp;
     if (get_src_adress2(tmp, remote_addr) != 0) return -1;
     si.new_src_ip.from_address_t(tmp);
-    // skip kernel TCP socket to avoid interference; use random source port
-    si.src_port = (int)(get_true_random_number() % 40000 + 1024);
+    // Use a dedicated TCP socket for port binding (separate from bind_fd)
+    static int client_fd = -1;
+    si.src_port = client_bind_to_a_new_port2(client_fd, tmp);
     init_filter(si.src_port);
     c.state.client_current_state = client_tcp_handshake;
     c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
@@ -97,7 +98,8 @@ void raw_client_on_timer(raw_client_t *ctx) {
         c.blob->anti_replay.re_init(); c.my_id = get_true_random_number_nz();
         address_t t; if (get_src_adress2(t, remote_addr) != 0) return;
         si.new_src_ip.from_address_t(t);
-        si.src_port = (int)(get_true_random_number() % 40000 + 1024); init_filter(si.src_port);
+        static int client_fd2 = -1;
+        si.src_port = client_bind_to_a_new_port2(client_fd2, t); init_filter(si.src_port);
         c.state.client_current_state = client_tcp_handshake;
         c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
         si.syn = 1; si.ack = 0; si.psh = 0;
