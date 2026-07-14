@@ -59,7 +59,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     auth_mode = auth_none;
     disable_anti_replay = 1;
     my_init_keys(key_string, 1);
-    mylog(log_info, "raw client key=[%s]\n", key_string);
+    mylog(log_info, "raw client key=[%s] cipher=%d\n", key_string, (int)cipher_mode);
     return ctx;
 }
 void raw_client_destroy(raw_client_t *ctx) { if (ctx) delete ctx; }
