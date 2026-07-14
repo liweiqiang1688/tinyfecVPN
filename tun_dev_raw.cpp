@@ -57,7 +57,12 @@ u64_t hton64(u64_t a) {
     return ((u64_t)htonl(l) << 32) | htonl(h);
 }
 u64_t ntoh64(u64_t a) { return hton64(a); }
-void print_binary_chars(const char *, int) {}
+void print_binary_chars(const char *a, int len) {
+    for (int i = 0; i < len && i < 32; i++) {
+        fprintf(stderr, "<%02x>", (unsigned char)a[i]);
+    }
+    fprintf(stderr, "\n");
+}
 // Real csum_with_header implementation (from udp2raw's common.cpp)
 unsigned short csum_with_header(char *header, int hlen, const unsigned short *ptr, int nbytes) {
     long sum = 0;
@@ -195,6 +200,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     auth_mode = auth_none;
     disable_anti_replay = 1;
     my_init_keys(key_string, 1);
+    mylog(log_info, "raw client key=[%s]\n", key_string);
     return ctx;
 }
 void raw_client_destroy(raw_client_t *ctx) { if (ctx) delete ctx; }
@@ -350,6 +356,7 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     auth_mode = auth_none;
     disable_anti_replay = 1;
     my_init_keys(key_string, 0);
+    mylog(log_info, "raw server key=[%s]\n", key_string);
     return ctx;
 }
 void raw_server_destroy(raw_server_t *ctx) { if (ctx) delete ctx; }
