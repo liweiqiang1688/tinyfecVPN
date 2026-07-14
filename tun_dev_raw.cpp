@@ -58,8 +58,19 @@ u64_t hton64(u64_t a) {
 }
 u64_t ntoh64(u64_t a) { return hton64(a); }
 void print_binary_chars(const char *, int) {}
-// NOTE: csum and csum_with_header are NOT stubbed — they come from
-// UDPspeeder's common.cpp. Do NOT stub them or TCP checksums will be 0!
+// Real csum_with_header implementation (from udp2raw's common.cpp)
+unsigned short csum_with_header(char *header, int hlen, const unsigned short *ptr, int nbytes) {
+    long sum = 0;
+    unsigned short oddbyte;
+    assert(hlen % 2 == 0);
+    unsigned short *tmp = (unsigned short *)header;
+    for (int i = 0; i < hlen / 2; i++) sum += *tmp++;
+    while (nbytes > 1) { sum += *ptr++; nbytes -= 2; }
+    if (nbytes == 1) { oddbyte = 0; *((u_char *)&oddbyte) = *(u_char *)ptr; sum += oddbyte; }
+    sum = (sum >> 16) + (sum & 0xffff);
+    sum = sum + (sum >> 16);
+    return (unsigned short)(~sum);
+}
 
 // Provide missing functions from common.cpp (NOT included).
 // These are needed by network.cpp/connection.cpp but not in UDPspeeder.
