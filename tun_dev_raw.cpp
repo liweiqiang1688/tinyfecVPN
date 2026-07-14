@@ -56,7 +56,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
     cipher_mode = cipher_xor;
-    auth_mode = auth_none;
+    auth_mode = auth_simple;
     disable_anti_replay = 1;
     my_init_keys(key_string, 1);
     return ctx;
@@ -211,7 +211,7 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
     cipher_mode = cipher_xor;
-    auth_mode = auth_none;
+    auth_mode = auth_simple;
     disable_anti_replay = 1;
     my_init_keys(key_string, 0);
     return ctx;
@@ -225,6 +225,12 @@ int raw_server_start(raw_server_t *) {
     bind_fd = socket(local_addr.get_type(), SOCK_STREAM, 0);
     if (bind(bind_fd, (struct sockaddr *)&local_addr.inner, local_addr.get_len()) != 0) exit(1);
     if (listen(bind_fd, SOMAXCONN) != 0) exit(1);
+    // Drop kernel TCP on the raw port so only our raw socket handles SYNs.
+    // This prevents the kernel TCP stack from interfering with sequence numbers.
+    int port = local_addr.get_port();
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "iptables -D INPUT -p tcp --dport %d -j DROP 2>/dev/null; iptables -I INPUT -p tcp --dport %d -j DROP", port, port);
+    system(cmd);
     init_filter(local_addr.get_port());
     return 0;
 }
