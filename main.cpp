@@ -13,7 +13,8 @@
 #include "git_version.h"
 using namespace std;
 
-static int use_raw_mode = 0;
+int use_raw_mode = 0;
+char raw_mode_key[1000] = "";
 
 static void print_help() {
     char git_version_buf[100] = {0};
@@ -41,6 +42,7 @@ static void print_help() {
     printf("    --raw-mode            <number>        enable raw socket mode, available values: 0 (disabled, default), 1 (faketcp).\n");
     printf("                                          in raw mode, data is sent over fake tcp packets to bypass isp throttling.\n");
     printf("                                          requires root privillege and only supports linux.\n");
+    printf("    --raw-mode-key        <string>        key for raw mode encryption (XOR cipher). default uses -k key.\n");
 
     printf("advanced options:\n");
     printf("    --mode                <number>        fec-mode,available values: 0,1; mode 0(default) costs less bandwidth,no mtu problem.\n");
@@ -142,21 +144,26 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Check for --raw-mode and strip it before process_arg
+    // Check for --raw-mode and --raw-mode-key, strip them before process_arg
     int new_argc = argc;
-    for (i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < argc) {
+    for (i = 1; i < new_argc; i++) {
+        if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < new_argc) {
             use_raw_mode = atoi(argv[i + 1]);
             if (use_raw_mode < 0 || use_raw_mode > 1) {
                 mylog(log_fatal, "--raw-mode must be 0 or 1\n");
                 myexit(-1);
             }
-            // remove --raw-mode and its value from argv
-            for (int j = i; j < argc - 2; j++) {
-                argv[j] = argv[j + 2];
-            }
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
             new_argc -= 2;
-            break;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-mode-key") == 0 && i + 1 < new_argc) {
+            strncpy(raw_mode_key, argv[i + 1], sizeof(raw_mode_key) - 1);
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
         }
     }
 

@@ -133,7 +133,8 @@ int tun_dev_raw_server_event_loop() {
     conn_info_t *conn_info_p = new conn_info_t;
     conn_info_t &conn_info = *conn_info_p;
 
-    raw_ctx = raw_server_init(local_addr.get_str(), key_string, "");
+    const char *rk = raw_mode_key[0] ? raw_mode_key : key_string;
+    raw_ctx = raw_server_init(local_addr.get_str(), rk, "");
     if (!raw_ctx) {
         mylog(log_fatal, "raw_server_init failed\n");
         myexit(-1);

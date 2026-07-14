@@ -139,6 +139,7 @@ main options:
     --report              <number>        turn on send/recv report, and set a period for reporting, unit: s
     --keep-reconnect                      re-connect after lost connection,only for client.
     --raw-mode            <number>        transport mode: 0 (udp, default), 1 (fake tcp via udp2raw)
+    --raw-mode-key        <string>        key for raw mode encryption (XOR cipher). default uses -k key.
 advanced options:
     --mtu                 <number>        mtu. for mode 0, the program will split packet to segment smaller than mtu_value.
                                           for mode 1, no packet will be split, the program just check if the mtu is exceed.
