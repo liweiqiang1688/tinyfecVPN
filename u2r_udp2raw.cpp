@@ -124,6 +124,7 @@ int char_to_numbers(const char *data, int len, my_id_t &id1, my_id_t &id2, my_id
     memcpy(&id3, data + sizeof(my_id_t) * 2, sizeof(id3)); id3 = ntohl(id3);
     return 0;
 }
+void print_binary_chars(const char *, int) {}
 
 // Include udp2raw source files (each gets its own static scope via include)
 #include "network.cpp"
