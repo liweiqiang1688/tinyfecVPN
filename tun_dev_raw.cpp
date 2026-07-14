@@ -193,6 +193,7 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     const_id = get_true_random_number_nz();
     cipher_mode = cipher_xor;
     auth_mode = auth_none;
+    disable_anti_replay = 1;
     my_init_keys(key_string, 1);
     return ctx;
 }
@@ -347,6 +348,7 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
     cipher_mode = cipher_xor;
     auth_mode = auth_none;
+    disable_anti_replay = 1;
     my_init_keys(key_string, 0);
     return ctx;
 }
