@@ -40,7 +40,7 @@ static int parse_raw_auth_mode(const char *value) {
 
 static void print_help() {
     char git_version_buf[100] = {0};
-    strncpy(git_version_buf, gitversion, 10);
+    snprintf(git_version_buf, sizeof(git_version_buf), "%.10s", gitversion);
 
     printf("tinyFecVPN\n");
     printf("git version: %s    ", git_version_buf);

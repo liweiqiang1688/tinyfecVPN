@@ -72,8 +72,14 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     u2r_raw_mode = mode_faketcp;
     raw_ip_version = remote_addr.get_type();
     use_tcp_dummy_socket = 0;
-    if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
-    if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
+    if (key && key[0]) {
+        strncpy(key_string, key, sizeof(key_string) - 1);
+        key_string[sizeof(key_string) - 1] = '\0';
+    }
+    if (dev_name && dev_name[0]) {
+        strncpy(dev, dev_name, sizeof(dev) - 1);
+        dev[sizeof(dev) - 1] = '\0';
+    }
     srand(get_true_random_number_nz());
     const_id = get_true_random_number_nz();
     cipher_mode = (cipher_mode_t)raw_cipher_mode_opt;
@@ -256,8 +262,14 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     extern address_t local_addr; extern program_mode_t program_mode; extern char key_string[1000];
     local_addr.from_str((char *)local_addr_str);
     program_mode = server_mode; u2r_raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
-    if (key && key[0]) strncpy(key_string, key, sizeof(key_string) - 1);
-    if (dev_name && dev_name[0]) strncpy(dev, dev_name, sizeof(dev) - 1);
+    if (key && key[0]) {
+        strncpy(key_string, key, sizeof(key_string) - 1);
+        key_string[sizeof(key_string) - 1] = '\0';
+    }
+    if (dev_name && dev_name[0]) {
+        strncpy(dev, dev_name, sizeof(dev) - 1);
+        dev[sizeof(dev) - 1] = '\0';
+    }
     srand(get_true_random_number_nz()); const_id = get_true_random_number_nz();
     cipher_mode = (cipher_mode_t)raw_cipher_mode_opt;
     auth_mode = (auth_mode_t)raw_auth_mode_opt;
