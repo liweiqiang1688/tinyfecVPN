@@ -11,22 +11,26 @@ static void raw_recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents
     conn_info_t &conn_info = *((conn_info_t *)watcher->data);
 
     char data[buf_len];
-    int len = raw_client_recv_packet(raw_ctx, data, max_data_len + 1);
+    // A raw-socket wakeup can represent a burst of frames.  Drain a bounded
+    // batch to reduce event/syscall overhead without starving the TUN watcher.
+    for (int n = 0; n < 32; n++) {
+        int len = raw_client_recv_packet(raw_ctx, data, max_data_len + 1);
+        if (len < 0) break;
+        if (len == 0) continue;
 
-    if (len <= 0) return;
+        if (got_feed_back == 0) {
+            mylog(log_info, "connection accepted by server\n");
+            got_feed_back = 1;
+        }
 
-    if (got_feed_back == 0) {
-        mylog(log_info, "connection accepted by server\n");
-        got_feed_back = 1;
+        mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
+
+        dest_t tun_dest;
+        tun_dest.type = type_write_fd;
+        tun_dest.inner.fd = s_tun_fd;
+
+        from_fec_to_normal2(conn_info, tun_dest, data, len);
     }
-
-    mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
-
-    dest_t tun_dest;
-    tun_dest.type = type_write_fd;
-    tun_dest.inner.fd = s_tun_fd;
-
-    from_fec_to_normal2(conn_info, tun_dest, data, len);
 }
 
 static void tun_fd_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {

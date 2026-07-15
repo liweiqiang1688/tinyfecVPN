@@ -10,17 +10,21 @@ static void raw_recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents
     conn_info_t &conn_info = *((conn_info_t *)watcher->data);
 
     char data[buf_len];
-    int len = raw_server_recv_packet(raw_ctx, data, max_data_len + 1);
+    // Process a bounded burst per wakeup so FEC bursts do not cause one libev
+    // callback and syscall round-trip per raw frame.
+    for (int n = 0; n < 32; n++) {
+        int len = raw_server_recv_packet(raw_ctx, data, max_data_len + 1);
+        if (len < 0) break;
+        if (len == 0) continue;
 
-    if (len <= 0) return;
+        mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
 
-    mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
+        dest_t tun_dest;
+        tun_dest.type = type_write_fd;
+        tun_dest.inner.fd = s_tun_fd;
 
-    dest_t tun_dest;
-    tun_dest.type = type_write_fd;
-    tun_dest.inner.fd = s_tun_fd;
-
-    from_fec_to_normal2(conn_info, tun_dest, data, len);
+        from_fec_to_normal2(conn_info, tun_dest, data, len);
+    }
 }
 
 static void tun_fd_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
