@@ -115,6 +115,19 @@ Cross-machine fake-TCP tunnelling now works end-to-end.
 
 The `auth_verify failed` errors are from `my_decrypt` → `auth_verify` in the SAFER data path (heartbeats), NOT from BARE handshake. This means the handshake DID succeed and data flows, but SAFER packet authentication fails.
 
+## Additional transport optimizations (2026-07-15)
+
+- `send_data_safer()` and `send_bare()` now return the underlying raw-send
+  status; oversized safer/bare payloads are rejected before stack-buffer copies.
+- Client/server receive vectors reserve a small batch capacity once per context,
+  avoiding repeated growth during GRO parsing.
+- Raw-socket event callbacks drain up to 32 ready frames per libev wakeup,
+  reducing event/syscall overhead while preserving a fairness bound for TUN I/O.
+- Fixed-size key, device, and interface-name copies are explicitly terminated;
+  derived key material is no longer printed during startup.
+- ARM/Linux clean builds and cross-machine fake-TCP smoke tests remained green
+  after these changes (5/5 IPv4 pings, 0% loss, ~20 ms RTT).
+
 ## Next Steps (suggested)
 
 ### Completed: separate udp2raw compilation
