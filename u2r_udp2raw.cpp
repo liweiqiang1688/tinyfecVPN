@@ -1,5 +1,9 @@
-// Separate compilation of all udp2raw sources with prefix macros.
-// This avoids single-TU issues that cause encryption key mismatch.
+// Shared udp2raw globals and compatibility stubs.
+//
+// The udp2raw implementation itself is compiled as separate objects (see the
+// makefile), matching its upstream build.  Keeping the sources out of this
+// translation unit is important: it gives each source file its original
+// internal/static storage rather than merging all of it into one unit.
 #include "u2r_prefix.h"
 
 #include "common.h"
@@ -129,22 +133,3 @@ void print_binary_chars(const char *a, int len) {
         fprintf(stderr, "<%02x>", (unsigned char)a[i]);
     fprintf(stderr, "\n");
 }
-// Debug: log the actual checksum values
-static void log_auth_data(const char *data, int len) {
-    unsigned char sum = 0;
-    for (int i = 0; i < len - 1; i++) sum += (unsigned char)data[i];
-    fprintf(stderr, "AUTH len=%d computed_sum=<%02x> stored=<%02x> ~sum=<%02x>\n",
-            len, sum, (unsigned char)data[len-1], (unsigned char)~sum);
-}
-
-// Include udp2raw source files (each gets its own static scope via include)
-#include "network.cpp"
-#include "connection.cpp"
-#include "encrypt.cpp"
-#include "lib/md5.cpp"
-#include "lib/pbkdf2-sha1.cpp"
-#include "lib/pbkdf2-sha256.cpp"
-#define polarssl_zeroize polarssl_zeroize_aes
-#include "lib/aes_faster_c/aes.cpp"
-#include "lib/aes_faster_c/wrapper.cpp"
-#undef polarssl_zeroize

@@ -15,6 +15,28 @@ using namespace std;
 
 int use_raw_mode = 0;
 char raw_mode_key[1000] = "";
+// Defaults retain compatibility with the initial integrated raw-mode release.
+// Set these explicitly for stronger udp2raw authentication/encryption.
+int raw_cipher_mode_opt = 2;  // cipher_xor
+int raw_auth_mode_opt = 3;    // auth_simple
+int raw_disable_anti_replay_opt = 1;
+
+static int parse_raw_cipher_mode(const char *value) {
+    if (strcmp(value, "none") == 0) return 0;
+    if (strcmp(value, "aes128cbc") == 0) return 1;
+    if (strcmp(value, "aes128cfb") == 0) return 3;
+    if (strcmp(value, "xor") == 0) return 2;
+    return -1;
+}
+
+static int parse_raw_auth_mode(const char *value) {
+    if (strcmp(value, "none") == 0) return 0;
+    if (strcmp(value, "md5") == 0) return 1;
+    if (strcmp(value, "crc32") == 0) return 2;
+    if (strcmp(value, "simple") == 0) return 3;
+    if (strcmp(value, "hmac_sha1") == 0) return 4;
+    return -1;
+}
 
 static void print_help() {
     char git_version_buf[100] = {0};
@@ -42,7 +64,10 @@ static void print_help() {
     printf("    --raw-mode            <number>        enable raw socket mode, available values: 0 (disabled, default), 1 (faketcp).\n");
     printf("                                          in raw mode, data is sent over fake tcp packets to bypass isp throttling.\n");
     printf("                                          requires root privillege and only supports linux.\n");
-    printf("    --raw-mode-key        <string>        key for raw mode encryption (XOR cipher). default uses -k key.\n");
+    printf("    --raw-mode-key        <string>        key for raw transport; default uses -k key.\n");
+    printf("    --raw-cipher           <name>          none, aes128cbc, aes128cfb, xor (default: xor).\n");
+    printf("    --raw-auth             <name>          none, md5, crc32, simple, hmac_sha1 (default: simple).\n");
+    printf("    --raw-disable-anti-replay <0|1>        disable replay protection (default: 1, legacy compatibility).\n");
 
     printf("advanced options:\n");
     printf("    --mode                <number>        fec-mode,available values: 0,1; mode 0(default) costs less bandwidth,no mtu problem.\n");
@@ -144,7 +169,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Check for --raw-mode and --raw-mode-key, strip them before process_arg
+    // Check raw-mode options and strip them before process_arg.
     int new_argc = argc;
     for (i = 1; i < new_argc; i++) {
         if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < new_argc) {
@@ -160,6 +185,39 @@ int main(int argc, char *argv[]) {
         }
         if (strcmp(argv[i], "--raw-mode-key") == 0 && i + 1 < new_argc) {
             strncpy(raw_mode_key, argv[i + 1], sizeof(raw_mode_key) - 1);
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-cipher") == 0 && i + 1 < new_argc) {
+            raw_cipher_mode_opt = parse_raw_cipher_mode(argv[i + 1]);
+            if (raw_cipher_mode_opt < 0) {
+                mylog(log_fatal, "invalid --raw-cipher value\n");
+                myexit(-1);
+            }
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-auth") == 0 && i + 1 < new_argc) {
+            raw_auth_mode_opt = parse_raw_auth_mode(argv[i + 1]);
+            if (raw_auth_mode_opt < 0) {
+                mylog(log_fatal, "invalid --raw-auth value\n");
+                myexit(-1);
+            }
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-disable-anti-replay") == 0 && i + 1 < new_argc) {
+            raw_disable_anti_replay_opt = atoi(argv[i + 1]);
+            if (raw_disable_anti_replay_opt != 0 && raw_disable_anti_replay_opt != 1) {
+                mylog(log_fatal, "--raw-disable-anti-replay must be 0 or 1\n");
+                myexit(-1);
+            }
             for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
             new_argc -= 2;
             i--;
