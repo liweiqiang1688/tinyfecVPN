@@ -59,6 +59,10 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     ctx->is_ready = 0;
     ctx->has_conv = 0;
     ctx->bind_fd = -1;
+    // Most raw frames contain one to a few logical payloads.  Keep a small
+    // batch capacity so GRO parsing does not reallocate on every receive.
+    ctx->recv_types.reserve(4);
+    ctx->recv_data.reserve(4);
     extern address_t remote_addr, local_addr;
     extern program_mode_t program_mode;
     extern char key_string[1000];
@@ -246,6 +250,9 @@ int raw_client_is_ready(raw_client_t *ctx) { return ctx->is_ready; }
 // ---- Server ----
 raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const char *dev_name) {
     raw_server_t *ctx = new raw_server_t(); ctx->is_ready = 0; ctx->has_client = 0; ctx->client_conv = 0;
+    // Match the client receive path and retain capacity across packets.
+    ctx->recv_types.reserve(4);
+    ctx->recv_data.reserve(4);
     extern address_t local_addr; extern program_mode_t program_mode; extern char key_string[1000];
     local_addr.from_str((char *)local_addr_str);
     program_mode = server_mode; u2r_raw_mode = mode_faketcp; raw_ip_version = local_addr.get_type();
