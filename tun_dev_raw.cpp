@@ -102,8 +102,7 @@ int raw_client_start(raw_client_t *ctx) {
     c.last_state_time = get_current_time(); c.last_hb_sent_time = 0;
     si.syn = 1; si.ack = 0; si.psh = 0;
     si.seq = get_true_random_number(); si.ack_seq = get_true_random_number();
-    send_raw0(c.raw_info, 0, 0);
-    return 0;
+    return send_raw0(c.raw_info, 0, 0);
 }
 
 void raw_client_on_timer(raw_client_t *ctx) {
@@ -240,8 +239,7 @@ int raw_client_send_packet(raw_client_t *ctx, const char *data, int len) {
         ctx->has_conv = 1;
     }
     c.blob->conv_manager.c.update_active_time(ctx->conv);
-    send_data_safer(c, data, len, ctx->conv);
-    return 0;
+    return send_data_safer(c, data, len, ctx->conv);
 }
 int raw_client_is_ready(raw_client_t *ctx) { return ctx->is_ready; }
 
@@ -394,7 +392,6 @@ int raw_server_send_packet(raw_server_t *ctx, const char *data, int len) {
     if (!cn.blob->conv_manager.s.is_conv_used(ctx->client_conv))
         cn.blob->conv_manager.s.insert_conv(ctx->client_conv, 0);
     cn.blob->conv_manager.s.update_active_time(ctx->client_conv);
-    send_data_safer(cn, data, len, ctx->client_conv);
-    return 0;
+    return send_data_safer(cn, data, len, ctx->client_conv);
 }
 int raw_server_is_ready(raw_server_t *ctx) { return ctx->is_ready && ctx->has_client; }
