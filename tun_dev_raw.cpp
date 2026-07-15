@@ -85,6 +85,8 @@ raw_client_t *raw_client_init(const char *remote_addr_str, const char *local_add
     cipher_mode = (cipher_mode_t)raw_cipher_mode_opt;
     auth_mode = (auth_mode_t)raw_auth_mode_opt;
     disable_anti_replay = raw_disable_anti_replay_opt;
+    hb_mode = raw_hb_mode_opt;
+    hb_len = raw_hb_len_opt;
     my_init_keys(key_string, 1);
     return ctx;
 }
@@ -274,6 +276,8 @@ raw_server_t *raw_server_init(const char *local_addr_str, const char *key, const
     cipher_mode = (cipher_mode_t)raw_cipher_mode_opt;
     auth_mode = (auth_mode_t)raw_auth_mode_opt;
     disable_anti_replay = raw_disable_anti_replay_opt;
+    hb_mode = raw_hb_mode_opt;
+    hb_len = raw_hb_len_opt;
     my_init_keys(key_string, 0);
     return ctx;
 }

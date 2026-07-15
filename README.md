@@ -112,6 +112,7 @@ Requirements for `--raw-mode 1`:
 - **Root** privilege is required (raw socket needs CAP_NET_RAW)
 - **Linux only** (uses PF_PACKET raw sockets)
 - Legacy defaults are `xor` + `simple` authentication with replay protection disabled, to preserve compatibility. For new deployments use `--raw-cipher aes128cbc --raw-auth hmac_sha1 --raw-disable-anti-replay 0` on both peers.
+- Heartbeats default to a padded 1,200-byte payload for legacy compatibility. For lower idle bandwidth, use `--raw-hb-mode 0` on both peers to send empty authenticated heartbeats; `--raw-hb-len` controls padding length when mode 1 is used.
 - All FEC options (`-f`, `--timeout`, `--mode`, etc.) work identically in fake TCP mode
 
 `--raw-mode 0` (default) uses the original UDP transport.
@@ -143,6 +144,8 @@ main options:
     --raw-cipher           <name>          none, aes128cbc, aes128cfb, xor (default: xor)
     --raw-auth             <name>          none, md5, crc32, simple, hmac_sha1 (default: simple)
     --raw-disable-anti-replay <0|1>        disable replay protection (default: 1, legacy compatibility)
+    --raw-hb-mode          <0|1>           heartbeat mode; 0 sends empty heartbeats (default: 1)
+    --raw-hb-len           <number>        heartbeat padding length, 0..1500 (default: 1200)
 advanced options:
     --mtu                 <number>        mtu. for mode 0, the program will split packet to segment smaller than mtu_value.
                                           for mode 1, no packet will be split, the program just check if the mtu is exceed.

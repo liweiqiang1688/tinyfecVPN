@@ -127,6 +127,9 @@ The `auth_verify failed` errors are from `my_decrypt` → `auth_verify` in the S
   derived key material is no longer printed during startup.
 - ARM/Linux clean builds and cross-machine fake-TCP smoke tests remained green
   after these changes (5/5 IPv4 pings, 0% loss, ~20 ms RTT).
+- Added `--raw-hb-mode` and `--raw-hb-len` controls.  The compatibility default
+  remains a 1,200-byte heartbeat, while `--raw-hb-mode 0` was verified
+  cross-machine and removes the padded heartbeat bandwidth cost.
 
 ## Next Steps (suggested)
 

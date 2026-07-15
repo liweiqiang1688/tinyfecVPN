@@ -20,6 +20,8 @@ char raw_mode_key[1000] = "";
 int raw_cipher_mode_opt = 2;  // cipher_xor
 int raw_auth_mode_opt = 3;    // auth_simple
 int raw_disable_anti_replay_opt = 1;
+int raw_hb_mode_opt = 1;
+int raw_hb_len_opt = 1200;
 
 static int parse_raw_cipher_mode(const char *value) {
     if (strcmp(value, "none") == 0) return 0;
@@ -68,6 +70,8 @@ static void print_help() {
     printf("    --raw-cipher           <name>          none, aes128cbc, aes128cfb, xor (default: xor).\n");
     printf("    --raw-auth             <name>          none, md5, crc32, simple, hmac_sha1 (default: simple).\n");
     printf("    --raw-disable-anti-replay <0|1>        disable replay protection (default: 1, legacy compatibility).\n");
+    printf("    --raw-hb-mode          <0|1>           heartbeat mode; 0 sends empty heartbeats (default: 1).\n");
+    printf("    --raw-hb-len           <number>        heartbeat padding length, 0..1500 (default: 1200).\n");
 
     printf("advanced options:\n");
     printf("    --mode                <number>        fec-mode,available values: 0,1; mode 0(default) costs less bandwidth,no mtu problem.\n");
@@ -216,6 +220,28 @@ int main(int argc, char *argv[]) {
             raw_disable_anti_replay_opt = atoi(argv[i + 1]);
             if (raw_disable_anti_replay_opt != 0 && raw_disable_anti_replay_opt != 1) {
                 mylog(log_fatal, "--raw-disable-anti-replay must be 0 or 1\n");
+                myexit(-1);
+            }
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-hb-mode") == 0 && i + 1 < new_argc) {
+            raw_hb_mode_opt = atoi(argv[i + 1]);
+            if (raw_hb_mode_opt != 0 && raw_hb_mode_opt != 1) {
+                mylog(log_fatal, "--raw-hb-mode must be 0 or 1\n");
+                myexit(-1);
+            }
+            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
+            new_argc -= 2;
+            i--;
+            continue;
+        }
+        if (strcmp(argv[i], "--raw-hb-len") == 0 && i + 1 < new_argc) {
+            raw_hb_len_opt = atoi(argv[i + 1]);
+            if (raw_hb_len_opt < 0 || raw_hb_len_opt > 1500) {
+                mylog(log_fatal, "--raw-hb-len must be between 0 and 1500\n");
                 myexit(-1);
             }
             for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
