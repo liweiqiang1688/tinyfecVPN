@@ -9,40 +9,12 @@
 #include "log.h"
 #include "misc.h"
 #include "tun_dev.h"
-#include "tun_dev_raw.h"
 #include "git_version.h"
 using namespace std;
 
-int use_raw_mode = 0;
-char raw_mode_key[1000] = "";
-// Defaults retain compatibility with the initial integrated raw-mode release.
-// Set these explicitly for stronger udp2raw authentication/encryption.
-int raw_cipher_mode_opt = 2;  // cipher_xor
-int raw_auth_mode_opt = 3;    // auth_simple
-int raw_disable_anti_replay_opt = 1;
-int raw_hb_mode_opt = 1;
-int raw_hb_len_opt = 1200;
-
-static int parse_raw_cipher_mode(const char *value) {
-    if (strcmp(value, "none") == 0) return 0;
-    if (strcmp(value, "aes128cbc") == 0) return 1;
-    if (strcmp(value, "aes128cfb") == 0) return 3;
-    if (strcmp(value, "xor") == 0) return 2;
-    return -1;
-}
-
-static int parse_raw_auth_mode(const char *value) {
-    if (strcmp(value, "none") == 0) return 0;
-    if (strcmp(value, "md5") == 0) return 1;
-    if (strcmp(value, "crc32") == 0) return 2;
-    if (strcmp(value, "simple") == 0) return 3;
-    if (strcmp(value, "hmac_sha1") == 0) return 4;
-    return -1;
-}
-
 static void print_help() {
     char git_version_buf[100] = {0};
-    snprintf(git_version_buf, sizeof(git_version_buf), "%.10s", gitversion);
+    strncpy(git_version_buf, gitversion, 10);
 
     printf("tinyFecVPN\n");
     printf("git version: %s    ", git_version_buf);
@@ -63,15 +35,6 @@ static void print_help() {
     printf("    --timeout             <number>        how long could a packet be held in queue before doing fec, unit: ms, default: 8ms\n");
     printf("    --report              <number>        turn on send/recv report, and set a period for reporting, unit: s\n");
     printf("    --keep-reconnect                      re-connect after lost connection,only for client. \n");
-    printf("    --raw-mode            <number>        enable raw socket mode, available values: 0 (disabled, default), 1 (faketcp).\n");
-    printf("                                          in raw mode, data is sent over fake tcp packets to bypass isp throttling.\n");
-    printf("                                          requires root privillege and only supports linux.\n");
-    printf("    --raw-mode-key        <string>        key for raw transport; default uses -k key.\n");
-    printf("    --raw-cipher           <name>          none, aes128cbc, aes128cfb, xor (default: xor).\n");
-    printf("    --raw-auth             <name>          none, md5, crc32, simple, hmac_sha1 (default: simple).\n");
-    printf("    --raw-disable-anti-replay <0|1>        disable replay protection (default: 1, legacy compatibility).\n");
-    printf("    --raw-hb-mode          <0|1>           heartbeat mode; 0 sends empty heartbeats (default: 1).\n");
-    printf("    --raw-hb-len           <number>        heartbeat padding length, 0..1500 (default: 1200).\n");
 
     printf("advanced options:\n");
     printf("    --mode                <number>        fec-mode,available values: 0,1; mode 0(default) costs less bandwidth,no mtu problem.\n");
@@ -173,85 +136,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Check raw-mode options and strip them before process_arg.
-    int new_argc = argc;
-    for (i = 1; i < new_argc; i++) {
-        if (strcmp(argv[i], "--raw-mode") == 0 && i + 1 < new_argc) {
-            use_raw_mode = atoi(argv[i + 1]);
-            if (use_raw_mode < 0 || use_raw_mode > 1) {
-                mylog(log_fatal, "--raw-mode must be 0 or 1\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-mode-key") == 0 && i + 1 < new_argc) {
-            strncpy(raw_mode_key, argv[i + 1], sizeof(raw_mode_key) - 1);
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-cipher") == 0 && i + 1 < new_argc) {
-            raw_cipher_mode_opt = parse_raw_cipher_mode(argv[i + 1]);
-            if (raw_cipher_mode_opt < 0) {
-                mylog(log_fatal, "invalid --raw-cipher value\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-auth") == 0 && i + 1 < new_argc) {
-            raw_auth_mode_opt = parse_raw_auth_mode(argv[i + 1]);
-            if (raw_auth_mode_opt < 0) {
-                mylog(log_fatal, "invalid --raw-auth value\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-disable-anti-replay") == 0 && i + 1 < new_argc) {
-            raw_disable_anti_replay_opt = atoi(argv[i + 1]);
-            if (raw_disable_anti_replay_opt != 0 && raw_disable_anti_replay_opt != 1) {
-                mylog(log_fatal, "--raw-disable-anti-replay must be 0 or 1\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-hb-mode") == 0 && i + 1 < new_argc) {
-            raw_hb_mode_opt = atoi(argv[i + 1]);
-            if (raw_hb_mode_opt != 0 && raw_hb_mode_opt != 1) {
-                mylog(log_fatal, "--raw-hb-mode must be 0 or 1\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-        if (strcmp(argv[i], "--raw-hb-len") == 0 && i + 1 < new_argc) {
-            raw_hb_len_opt = atoi(argv[i + 1]);
-            if (raw_hb_len_opt < 0 || raw_hb_len_opt > 1500) {
-                mylog(log_fatal, "--raw-hb-len must be between 0 and 1500\n");
-                myexit(-1);
-            }
-            for (int j = i; j < new_argc - 2; j++) argv[j] = argv[j + 2];
-            new_argc -= 2;
-            i--;
-            continue;
-        }
-    }
+    // g_fec_mode=0;
 
-    process_arg(new_argc, argv);
+    process_arg(argc, argv);
 
     delay_manager.set_capacity(delay_capacity);
     // local_ip_uint32=inet_addr(local_ip);
@@ -267,17 +154,9 @@ int main(int argc, char *argv[]) {
             tun_mtu=g_fec_mtu;
     }*/
     if (program_mode == client_mode) {
-        if (use_raw_mode) {
-            tun_dev_raw_client_event_loop();
-        } else {
-            tun_dev_client_event_loop();
-        }
+        tun_dev_client_event_loop();
     } else {
-        if (use_raw_mode) {
-            tun_dev_raw_server_event_loop();
-        } else {
-            tun_dev_server_event_loop();
-        }
+        tun_dev_server_event_loop();
     }
 
     return 0;

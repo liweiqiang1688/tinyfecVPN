@@ -20,8 +20,7 @@ int get_tun_fd(char *dev_name) {
     memset(&ifr, 0, sizeof(ifr));
     ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
-    strncpy(ifr.ifr_name, dev_name, IFNAMSIZ - 1);
-    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+    strncpy(ifr.ifr_name, dev_name, IFNAMSIZ);
 
     if (ioctl(tun_fd, TUNSETIFF, (void *)&ifr) != 0) {
         mylog(log_fatal, "open /dev/net/tun failed");
@@ -46,8 +45,7 @@ int set_tun(char *if_name, u32_t local_ip, u32_t remote_ip, int mtu) {
     memset(&sai, 0, sizeof(struct sockaddr));
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
-    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+    strncpy(ifr.ifr_name, if_name, IFNAMSIZ);
 
     sai.sin_family = AF_INET;
     sai.sin_port = 0;

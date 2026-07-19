@@ -10,21 +10,17 @@ static void raw_recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents
     conn_info_t &conn_info = *((conn_info_t *)watcher->data);
 
     char data[buf_len];
-    // Process a bounded burst per wakeup so FEC bursts do not cause one libev
-    // callback and syscall round-trip per raw frame.
-    for (int n = 0; n < 32; n++) {
-        int len = raw_server_recv_packet(raw_ctx, data, max_data_len + 1);
-        if (len < 0) break;
-        if (len == 0) continue;
+    int len = raw_server_recv_packet(raw_ctx, data, max_data_len + 1);
 
-        mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
+    if (len <= 0) return;
 
-        dest_t tun_dest;
-        tun_dest.type = type_write_fd;
-        tun_dest.inner.fd = s_tun_fd;
+    mylog(log_trace, "Received packet from raw socket,len: %d\n", len);
 
-        from_fec_to_normal2(conn_info, tun_dest, data, len);
-    }
+    dest_t tun_dest;
+    tun_dest.type = type_write_fd;
+    tun_dest.inner.fd = s_tun_fd;
+
+    from_fec_to_normal2(conn_info, tun_dest, data, len);
 }
 
 static void tun_fd_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
@@ -137,8 +133,7 @@ int tun_dev_raw_server_event_loop() {
     conn_info_t *conn_info_p = new conn_info_t;
     conn_info_t &conn_info = *conn_info_p;
 
-    const char *rk = raw_mode_key[0] ? raw_mode_key : key_string;
-    raw_ctx = raw_server_init(local_addr.get_str(), rk, "");
+    raw_ctx = raw_server_init(local_addr.get_str(), key_string, "");
     if (!raw_ctx) {
         mylog(log_fatal, "raw_server_init failed\n");
         myexit(-1);

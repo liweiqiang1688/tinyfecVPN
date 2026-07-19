@@ -24,19 +24,12 @@ set(SOURCE_FILES
         tun_dev_client.cpp
         tun_dev_server.cpp
         tun_dev.cpp
-        tun_dev_raw_client.cpp
-        tun_dev_raw_server.cpp
 )
-
-# tun_dev_raw.cpp is compiled separately with udp2raw headers
-# to avoid symbol conflicts with UDPspeeder
-add_library(tun_dev_raw_obj OBJECT tun_dev_raw.cpp)
-target_include_directories(tun_dev_raw_obj PRIVATE "udp2raw")
-target_include_directories(tun_dev_raw_obj SYSTEM PRIVATE "udp2raw/libev")
-
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-missing-field-initializers -O2 -g -fsanitize=address,undefined")
 
-add_executable(tinyvpn ${SOURCE_FILES} $<TARGET_OBJECTS:tun_dev_raw_obj>)
+#target_include_directories(speederv2 PRIVATE .)
+#set(CMAKE_LINK_LIBRARY_FLAG "-lrt")
+add_executable(tinyvpn ${SOURCE_FILES})
 target_link_libraries(tinyvpn rt)
 target_link_libraries(tinyvpn pthread)
 include_directories(SYSTEM "UDPspeeder/libev")

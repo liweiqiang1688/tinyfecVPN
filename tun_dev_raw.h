@@ -1,13 +1,6 @@
 #ifndef TUN_DEV_RAW_H_
 #define TUN_DEV_RAW_H_
 
-extern char raw_mode_key[1000];
-extern int raw_cipher_mode_opt;
-extern int raw_auth_mode_opt;
-extern int raw_disable_anti_replay_opt;
-extern int raw_hb_mode_opt;
-extern int raw_hb_len_opt;
-
 typedef struct raw_client_t raw_client_t;
 typedef struct raw_server_t raw_server_t;
 

@@ -1,7 +1,0 @@
-[submodule "UDPspeeder"]
-	path = UDPspeeder
-	url = https://github.com/wangyu-/UDPspeeder.git
-[submodule "udp2raw"]
-	path = udp2raw
-	url = https://github.com/wangyu-/udp2raw.git
-	branch = unified
