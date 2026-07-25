@@ -10,8 +10,8 @@
 #include "packet.h"
 #include "misc.h"
 
-int iv_min = 4;
-int iv_max = 32;  //< 256;
+int iv_min = 64;
+int iv_max = 128;  //< 256;
 u64_t packet_send_count = 0;
 u64_t dup_packet_send_count = 0;
 u64_t packet_recv_count = 0;
@@ -74,16 +74,26 @@ int do_obscure_old(const char *input, int in_len, char *output, int &out_len) {
     return 0;
 }
 
+// Packets larger than this skip the random padding + XOR (their size is
+// already uninformative); they still carry the 1-byte iv_len marker (0) so
+// the receiver parses both cases uniformly.
+const int obscure_max_len = 800;
+
 int do_obscure(char *data, int &len) {
     assert(len >= 0);
     assert(len < buf_len);
 
-    int iv_len = random_between(iv_min, iv_max);
-    get_fake_random_chars(data + len, iv_len);
+    int iv_len = 0;
+    if (len <= obscure_max_len) {
+        iv_len = random_between(iv_min, iv_max);
+        get_fake_random_chars(data + len, iv_len);
+    }
     data[iv_len + len] = (uint8_t)iv_len;
-    for (int i = 0, j = 0; i < len; i++, j++) {
-        if (j == iv_len) j = 0;
-        data[i] ^= data[len + j];
+    if (iv_len > 0) {
+        for (int i = 0, j = 0; i < len; i++, j++) {
+            if (j == iv_len) j = 0;
+            data[i] ^= data[len + j];
+        }
     }
 
     len = len + iv_len + 1;
@@ -97,9 +107,11 @@ int de_obscure(char *data, int &len) {
     if (len < 1 + iv_len) return -1;
 
     len = len - 1 - iv_len;
-    for (int i = 0, j = 0; i < len; i++, j++) {
-        if (j == iv_len) j = 0;
-        data[i] ^= data[len + j];
+    if (iv_len > 0) {
+        for (int i = 0, j = 0; i < len; i++, j++) {
+            if (j == iv_len) j = 0;
+            data[i] ^= data[len + j];
+        }
     }
 
     return 0;
