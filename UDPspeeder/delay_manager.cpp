@@ -59,7 +59,12 @@ int delay_manager_t::add(my_time_t delay, const dest_t &dest, char *data, int le
     }
 
     delay_data_t tmp = delay_data;
-    tmp.data = (char *)malloc(delay_data.len + 100);
+    // Budget must cover do_cook's growth at handle() time: crc32 (4) +
+    // obscure padding (up to iv_max, 128) + marker (1) = 133B. The old
+    // +100 was sized for iv_max=32 and silently overflows with iv_max=128,
+    // corrupting the heap until a strcmp reads garbage (2026-07-26
+    // network-wide tinyvpn segfault with --jitter enabled).
+    tmp.data = (char *)malloc(delay_data.len + 200);
     if (!tmp.data) {
         mylog(log_warn, "malloc() returned null in delay_manager_t::add()");
         return -1;
